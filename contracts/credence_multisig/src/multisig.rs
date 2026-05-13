@@ -5,8 +5,11 @@
 //! and execution at threshold. Can be used for any administrative action requiring
 //! multi-party approval.
 
-use soroban_sdk::{contract, contractimpl, contracttype, panic_with_error, Address, Bytes, BytesN, Env, String, Symbol, Vec};
 use credence_errors::ContractError;
+use soroban_sdk::{
+    contract, contractimpl, contracttype, panic_with_error, Address, Bytes, BytesN, Env, String,
+    Symbol, Vec,
+};
 
 /// Type of action that can be proposed and executed.
 #[contracttype]
@@ -437,8 +440,10 @@ impl CredenceMultiSig {
             panic!("operation already executed");
         }
 
-        // Mark executed globally to prevent exact replay 
-        e.storage().instance().set(&DataKey::ExecutedOp(op_hash.clone()), &true);
+        // Mark executed globally to prevent exact replay
+        e.storage()
+            .instance()
+            .set(&DataKey::ExecutedOp(op_hash.clone()), &true);
 
         proposal.status = ProposalStatus::Executed;
         e.storage()

@@ -138,10 +138,14 @@ fn proportional_deduction(e: &Env, source_balance: i128, amount: i128, total: i1
         u128::try_from(source_balance)
             .unwrap_or_else(|_| panic_with_error!(e, ContractError::AmountMustBePositive)),
     );
-    let withdrawal =
-        U256::new(u128::try_from(amount).unwrap_or_else(|_| panic_with_error!(e, ContractError::AmountMustBePositive)));
-    let available =
-        U256::new(u128::try_from(total).unwrap_or_else(|_| panic_with_error!(e, ContractError::AmountMustBePositive)));
+    let withdrawal = U256::new(
+        u128::try_from(amount)
+            .unwrap_or_else(|_| panic_with_error!(e, ContractError::AmountMustBePositive)),
+    );
+    let available = U256::new(
+        u128::try_from(total)
+            .unwrap_or_else(|_| panic_with_error!(e, ContractError::AmountMustBePositive)),
+    );
     let deduction = (source * withdrawal) / available;
 
     i128::try_from(deduction.as_u128())

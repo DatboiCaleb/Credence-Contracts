@@ -91,7 +91,9 @@ fn test_delegate_paused() {
     let owner = Address::generate(&env);
     let delegate = Address::generate(&env);
     client.pause(&admin);
-    assert!(client.try_delegate(&owner, &delegate, &DelegationType::Attestation, &86400_u64).is_err());
+    assert!(client
+        .try_delegate(&owner, &delegate, &DelegationType::Attestation, &86400_u64)
+        .is_err());
 }
 
 #[test]
@@ -101,7 +103,9 @@ fn test_revoke_delegation_paused() {
     let delegate = Address::generate(&env);
     client.delegate(&owner, &delegate, &DelegationType::Attestation, &86400_u64);
     client.pause(&admin);
-    assert!(client.try_revoke_delegation(&owner, &delegate, &DelegationType::Attestation).is_err());
+    assert!(client
+        .try_revoke_delegation(&owner, &delegate, &DelegationType::Attestation)
+        .is_err());
 }
 
 #[test]
@@ -127,7 +131,15 @@ fn test_execute_delegated_delegate_paused() {
         owner: owner.clone(),
         target: delegate.clone(),
     };
-    assert!(client.try_execute_delegated_delegate(&owner, &delegate, &DelegationType::Attestation, &86400_u64, &payload).is_err());
+    assert!(client
+        .try_execute_delegated_delegate(
+            &owner,
+            &delegate,
+            &DelegationType::Attestation,
+            &86400_u64,
+            &payload
+        )
+        .is_err());
 }
 
 #[test]
@@ -144,7 +156,9 @@ fn test_execute_delegated_revoke_paused() {
         owner: owner.clone(),
         target: delegate.clone(),
     };
-    assert!(client.try_execute_delegated_revoke(&owner, &delegate, &DelegationType::Attestation, &payload).is_err());
+    assert!(client
+        .try_execute_delegated_revoke(&owner, &delegate, &DelegationType::Attestation, &payload)
+        .is_err());
 }
 
 #[test]
@@ -161,7 +175,9 @@ fn test_execute_delegated_revoke_attest_paused() {
         owner: owner.clone(),
         target: delegate.clone(),
     };
-    assert!(client.try_execute_delegated_revoke_attest(&owner, &delegate, &payload).is_err());
+    assert!(client
+        .try_execute_delegated_revoke_attest(&owner, &delegate, &payload)
+        .is_err());
 }
 
 #[test]

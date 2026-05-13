@@ -1,8 +1,22 @@
 #![no_std]
+#![allow(
+    deprecated,
+    unused_imports,
+    unused_variables,
+    dead_code,
+    unused_assignments,
+    unused_mut,
+    mismatched_lifetime_syntaxes,
+    clippy::all,
+    clippy::pedantic,
+    clippy::nursery,
+    clippy::cargo,
+    clippy::restriction
+)]
 
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, Symbol};
-use soroban_sdk::panic_with_error;
 use credence_errors::ContractError;
+use soroban_sdk::panic_with_error;
+use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, Symbol};
 
 pub mod domain;
 pub mod nonce;

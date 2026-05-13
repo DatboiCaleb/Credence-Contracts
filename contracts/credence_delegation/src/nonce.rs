@@ -4,9 +4,9 @@
 //! signature to a single use.  The same pattern used by `credence_bond::nonce`
 //! is replicated here so the delegation contract remains self-contained.
 
-use soroban_sdk::{Address, Env};
-use soroban_sdk::panic_with_error;
 use credence_errors::ContractError;
+use soroban_sdk::panic_with_error;
+use soroban_sdk::{Address, Env};
 
 use crate::DataKey;
 

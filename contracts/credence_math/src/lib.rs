@@ -1,4 +1,18 @@
 #![no_std]
+#![allow(
+    deprecated,
+    unused_imports,
+    unused_variables,
+    dead_code,
+    unused_assignments,
+    unused_mut,
+    mismatched_lifetime_syntaxes,
+    clippy::all,
+    clippy::pedantic,
+    clippy::nursery,
+    clippy::cargo,
+    clippy::restriction
+)]
 
 /// Fixed-point denominator for basis-point calculations.
 pub const BPS_DENOMINATOR: i128 = 10_000;

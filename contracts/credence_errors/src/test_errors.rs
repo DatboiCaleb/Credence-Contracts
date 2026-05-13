@@ -1021,7 +1021,9 @@ mod tests {
 
     #[test]
     fn test_insufficient_signatures_description() {
-        assert!(!ContractError::InsufficientSignatures.description().is_empty());
+        assert!(!ContractError::InsufficientSignatures
+            .description()
+            .is_empty());
     }
 
     // arithmetic
