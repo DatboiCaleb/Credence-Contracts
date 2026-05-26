@@ -558,8 +558,8 @@ impl CredenceBond {
     /// # Events
     /// Emits `bond_slashed` event with (identity, slash_amount, total_slashed_amount)
     pub fn slash(e: Env, admin: Address, amount: i128) -> IdentityBond {
-        Self::require_not_paused(&e);
-        slashing::slash_bond(&e, &admin, amount)
+        Self::slash_bond(e.clone(), admin, amount);
+        Self::get_identity_state(e)
     }
 
     /// Top up the bond with additional amount (checks for overflow). Blocked while paused.
@@ -671,21 +671,15 @@ impl CredenceBond {
         withdraw_amount
     }
 
-    /// Slash a portion of a bond. Only callable by admin. Blocked while paused.
+    /// Slash a positive portion of a bond. Only callable by admin. Blocked while paused.
+    /// Validates `slash_amount > 0`, uses checked arithmetic, rejects over-slashing,
+    /// and emits `bond_slashed(identity, slash_amount, total_slashed_amount)` on success.
     /// Uses a reentrancy guard to prevent re-entrance during external calls.
     pub fn slash_bond(e: Env, admin: Address, slash_amount: i128) -> i128 {
         Self::require_not_paused(&e);
-        admin.require_auth();
-        Self::acquire_lock(&e);
-
-        let stored_admin: Address = e
-            .storage()
-            .instance()
-            .get(&DataKey::Admin)
-            .unwrap_or_else(|| panic!("no admin"));
-        if stored_admin != admin {
-            Self::release_lock(&e);
-            panic!("not admin");
+        Self::require_admin(&e, &admin);
+        if slash_amount <= 0 {
+            panic!("slash amount must be positive");
         }
 
         let bond_key = DataKey::Bond;
@@ -696,15 +690,18 @@ impl CredenceBond {
             .unwrap_or_else(|| panic!("no bond"));
 
         if !bond.active {
-            Self::release_lock(&e);
             panic!("bond not active");
         }
 
-        let new_slashed = bond.slashed_amount + slash_amount;
+        let new_slashed = bond
+            .slashed_amount
+            .checked_add(slash_amount)
+            .expect("slashing caused overflow");
         if new_slashed > bond.bonded_amount {
-            Self::release_lock(&e);
             panic!("slash exceeds bond");
         }
+
+        Self::acquire_lock(&e);
 
         // State update BEFORE external interaction
         let updated = IdentityBond {
@@ -722,6 +719,10 @@ impl CredenceBond {
             notice_period: bond.notice_period,
         };
         e.storage().instance().set(&bond_key, &updated);
+        e.events().publish(
+            (Symbol::new(&e, "bond_slashed"),),
+            (bond.identity.clone(), slash_amount, new_slashed),
+        );
 
         // External call: invoke callback if registered
         let cb_key = Symbol::new(&e, "callback");
@@ -847,6 +848,9 @@ mod test_replay_prevention;
 
 #[cfg(test)]
 mod test_pausable;
+
+#[cfg(test)]
+mod test_slash_bond;
 
 #[cfg(test)]
 mod security;
