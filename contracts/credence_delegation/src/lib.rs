@@ -102,20 +102,24 @@ impl CredenceDelegation {
     }
 
     // -----------------------------------------------------------------------
-    // Direct (auth-required) entry points — no off-chain signature needed
+    // Direct (auth-required) entry points — updated for unified nonce verification
     // -----------------------------------------------------------------------
 
     /// Create a delegation from owner to delegate with a given type and expiry.
-    /// The owner must be the transaction signer.
+    /// The owner must be the transaction signer and provide the correct current nonce.
     pub fn delegate(
         e: Env,
         owner: Address,
         delegate: Address,
         delegation_type: DelegationType,
         expires_at: u64,
+        nonce: u64,
     ) -> Delegation {
         pausable::require_not_paused(&e);
         owner.require_auth();
+
+        // Enforce centralized sequential replay tracking
+        nonce::consume_nonce(&e, &owner, nonce);
 
         if expires_at <= e.ledger().timestamp() {
             panic_with_error!(&e, ContractError::ExpiryInPast);
@@ -124,23 +128,30 @@ impl CredenceDelegation {
         Self::store_delegation(&e, owner, delegate, delegation_type, expires_at)
     }
 
-    /// Revoke an existing delegation. Only the owner can revoke.
+    /// Revoke an existing delegation. Only the owner can revoke and must provide the correct current nonce.
     pub fn revoke_delegation(
         e: Env,
         owner: Address,
         delegate: Address,
         delegation_type: DelegationType,
+        nonce: u64,
     ) {
         pausable::require_not_paused(&e);
         owner.require_auth();
 
+        // Enforce centralized sequential replay tracking
+        nonce::consume_nonce(&e, &owner, nonce);
+
         Self::mark_delegation_revoked(&e, owner, delegate, delegation_type, "delegation");
     }
 
-    /// Revoke an attestation-type delegation.  Only the original attester can revoke.
-    pub fn revoke_attestation(e: Env, attester: Address, subject: Address) {
+    /// Revoke an attestation-type delegation. Only the original attester can revoke and must provide the correct current nonce.
+    pub fn revoke_attestation(e: Env, attester: Address, subject: Address, nonce: u64) {
         pausable::require_not_paused(&e);
         attester.require_auth();
+
+        // Enforce centralized sequential replay tracking
+        nonce::consume_nonce(&e, &attester, nonce);
 
         Self::mark_delegation_revoked(
             &e,

@@ -493,3 +493,89 @@ fn happy_path_delegated_revoke_attestation() {
     ));
     assert_eq!(client.get_nonce(&attester), 1);
 }
+
+#[test]
+fn test_direct_path_nonce_reconciliation_and_invalidation() {
+    let (e, client, contract_id) = setup();
+    let owner = Address::generate(&e);
+    let delegate = Address::generate(&e);
+    let expiry = e.ledger().timestamp() + 86_400;
+
+    // 1. Direct path action consumes sequence 0
+    assert_eq!(client.get_nonce(&owner), 0);
+    client.delegate(
+        &owner,
+        &delegate,
+        &DelegationType::Attestation,
+        &expiry,
+        &0_u64,
+    );
+    assert_eq!(client.get_nonce(&owner), 1);
+
+    // 2. Direct path action fails if reusing sequence 0
+    let res = client.try_delegate(
+        &owner,
+        &delegate,
+        &DelegationType::Management,
+        &expiry,
+        &0_u64,
+    );
+    assert!(
+        res.is_err(),
+        "Expected rejection of stale sequence on direct execution"
+    );
+
+    // 3. Trigger range invalidation mechanism to bounce current sequence to index 5
+    client.invalidate_nonce_range(&owner, &5_u64);
+    assert_eq!(client.get_nonce(&owner), 5);
+
+    // 4. Stale execution attempt at historical gap index fails
+    let res_stale = client.try_delegate(
+        &owner,
+        &delegate,
+        &DelegationType::Management,
+        &expiry,
+        &1_u64,
+    );
+    assert!(res_stale.is_err());
+
+    // 5. Valid transaction successfully locks in sequence sequence index 5
+    client.delegate(
+        &owner,
+        &delegate,
+        &DelegationType::Management,
+        &expiry,
+        &5_u64,
+    );
+    assert_eq!(client.get_nonce(&owner), 6);
+}
+
+#[test]
+fn test_mixed_execution_interleaving() {
+    let (e, client, contract_id) = setup();
+    let owner = Address::generate(&e);
+    let delegate = Address::generate(&e);
+    let expiry = e.ledger().timestamp() + 86_400;
+
+    // Direct invocation uses 0
+    client.delegate(
+        &owner,
+        &delegate,
+        &DelegationType::Attestation,
+        &expiry,
+        &0_u64,
+    );
+
+    // Relayer off-chain action relies on index 1
+    let payload = make_payload(
+        &e,
+        DomainTag::RevokeDelegation,
+        &owner,
+        &delegate,
+        &contract_id,
+        1,
+    );
+    client.execute_delegated_revoke(&owner, &delegate, &DelegationType::Attestation, &payload);
+
+    assert_eq!(client.get_nonce(&owner), 2);
+}

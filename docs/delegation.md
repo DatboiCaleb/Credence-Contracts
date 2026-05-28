@@ -10,20 +10,20 @@ The `CredenceDelegation` contract stores delegations keyed by `(owner, delegate,
 
 ### DelegationType
 
-| Variant       | Description                              |
-|---------------|------------------------------------------|
-| Attestation   | Delegate can attest on behalf of owner   |
-| Management    | Delegate can manage bonds on behalf of owner |
+| Variant     | Description                                  |
+| ----------- | -------------------------------------------- |
+| Attestation | Delegate can attest on behalf of owner       |
+| Management  | Delegate can manage bonds on behalf of owner |
 
 ### Delegation
 
-| Field            | Type            | Description                      |
-|------------------|-----------------|----------------------------------|
-| owner            | Address         | Bond owner granting delegation   |
-| delegate         | Address         | Address receiving delegated rights |
-| delegation_type  | DelegationType  | Kind of delegation               |
-| expires_at       | u64             | Ledger timestamp when delegation expires |
-| revoked          | bool            | Whether the delegation was revoked |
+| Field           | Type           | Description                              |
+| --------------- | -------------- | ---------------------------------------- |
+| owner           | Address        | Bond owner granting delegation           |
+| delegate        | Address        | Address receiving delegated rights       |
+| delegation_type | DelegationType | Kind of delegation                       |
+| expires_at      | u64            | Ledger timestamp when delegation expires |
+| revoked         | bool           | Whether the delegation was revoked       |
 
 ## Contract Functions
 
@@ -49,10 +49,10 @@ Returns `true` if the delegation exists, is not revoked, and has not expired. Re
 
 ## Events
 
-| Event                | Data        | Emitted when              |
-|----------------------|-------------|---------------------------|
-| delegation_created   | Delegation  | A new delegation is stored |
-| delegation_revoked   | Delegation  | A delegation is revoked    |
+| Event              | Data       | Emitted when               |
+| ------------------ | ---------- | -------------------------- |
+| delegation_created | Delegation | A new delegation is stored |
+| delegation_revoked | Delegation | A delegation is revoked    |
 
 ## Security
 
@@ -64,7 +64,7 @@ Returns `true` if the delegation exists, is not revoked, and has not expired. Re
 
 ## Pausing
 
-The contract implements a pause mechanism to protect the protocol in case of emergency. 
+The contract implements a pause mechanism to protect the protocol in case of emergency.
 
 - **Mechanism**: Can be a direct pause by admin (if threshold is 0) or a multi-sig proposal process (if threshold > 0).
 - **Gated Functions**: All mutating functions related to delegation are gated and will panic if the contract is paused:
@@ -73,6 +73,14 @@ The contract implements a pause mechanism to protect the protocol in case of eme
   - `revoke_attestation` / `execute_delegated_revoke_attest`
   - `invalidate_nonce_range`
 - **Exempt Functions**: Query functions (`is_valid_delegate`, `get_delegation`, etc.) and pause-management functions remain active even when paused.
+
+## Nonce Replay Model & Key Recovery
+
+The contract enforces a uniform replay security model across all mutating entry points (`delegate`, `revoke_delegation`, `revoke_attestation`, and their `execute_delegated_*` relayer counterparts). Every identity maps directly to an independent sequential sequence stream.
+
+1. **Direct Path Invocation**: Calls made directly by account owners must specify their current tracking sequence sequence parameter explicitly. This asserts operational parity with signed payloads.
+2. **Relayed Executions**: Off-chain entities presenting payload structures must contain matching valid parameters and match the expected sequence sequence index exactly.
+3. **Emergency Key Recovery**: Invoking `invalidate_nonce_range(id, to_nonce)` forces the internal sequence tracker forward. This permanently drops all signatures and pre-allocated instructions whose nonces fall below the updated boundary across both entry vectors.
 
 ## Usage
 

@@ -25,7 +25,13 @@ fn test_delegate_attestation() {
     let (e, client) = setup();
     let owner = Address::generate(&e);
     let delegate = Address::generate(&e);
-    let d = client.delegate(&owner, &delegate, &DelegationType::Attestation, &86400_u64);
+    let d = client.delegate(
+        &owner,
+        &delegate,
+        &DelegationType::Attestation,
+        &86400_u64,
+        &0_u64,
+    );
 
     assert_eq!(d.owner, owner);
     assert_eq!(d.delegate, delegate);
@@ -64,8 +70,14 @@ fn test_revoke_delegation() {
     let (e, client) = setup();
     let owner = Address::generate(&e);
     let delegate = Address::generate(&e);
-    client.delegate(&owner, &delegate, &DelegationType::Attestation, &86400_u64);
-    client.revoke_delegation(&owner, &delegate, &DelegationType::Attestation);
+    client.delegate(
+        &owner,
+        &delegate,
+        &DelegationType::Attestation,
+        &86400_u64,
+        &0_u64,
+    );
+    client.revoke_delegation(&owner, &delegate, &DelegationType::Attestation, &1_u64);
 
     let d = client.get_delegation(&owner, &delegate, &DelegationType::Attestation);
     assert!(d.revoked);
