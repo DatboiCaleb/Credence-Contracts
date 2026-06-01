@@ -350,13 +350,24 @@ pub enum ContractError {
     // variants defined in the Bond section above.
 
     /// Unknown or unsupported signature scheme tag.
-    UnknownScheme = 508,
+    /// Contracts: delegation
+    /// Wire-stable: do not renumber this error code.
+    UnknownScheme = 504,
+
     /// Verifier already registered for the given scheme tag.
-    VerifierAlreadyRegistered = 509,
+    /// Contracts: delegation
+    /// Wire-stable: do not renumber this error code.
+    VerifierAlreadyRegistered = 505,
+
     /// No verifier registered for the given scheme tag.
-    VerifierNotRegistered = 510,
+    /// Contracts: delegation
+    /// Wire-stable: do not renumber this error code.
+    VerifierNotRegistered = 506,
+
     /// Signature verification failed for the given scheme and payload.
-    VerificationFailed = 511,
+    /// Contracts: delegation
+    /// Wire-stable: do not renumber this error code.
+    VerificationFailed = 507,
 
     // --- Treasury (600-699) ---
     /// Amount argument must be strictly positive (> 0).
