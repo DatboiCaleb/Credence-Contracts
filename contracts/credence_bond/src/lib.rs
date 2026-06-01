@@ -1,13 +1,5 @@
 #![no_std]
 
-#402--Contracts]-Bond--differential-test-harness-comparing-ours.rs/base.rs/theirs.rs-against-credence_bond-crate-FIX
-pub mod early_exit_penalty;
-pub mod nonce;
-pub mod rolling_bond;
-pub mod slashing;
-pub mod tiered_bond;
-pub mod weighted_attestation;
-
 mod early_exit_penalty;
 mod migration;
 mod nonce;
@@ -15,7 +7,6 @@ mod rolling_bond;
 mod slashing;
 mod tiered_bond;
 mod weighted_attestation;
-main
 
 #[path = "types/mod.rs"]
 pub mod types;
@@ -60,10 +51,6 @@ pub struct IdentityBond {
     pub notice_period_duration: u64,
 }
 
-#402--Contracts]-Bond--differential-test-harness-comparing-ours.rs/base.rs/theirs.rs-against-credence_bond-crate-FIX
-
-
-main
 // Re-export attestation type for external callers.
 pub use types::Attestation;
 
@@ -432,11 +419,8 @@ impl CredenceBond {
             if e.ledger().timestamp() < earliest {
                 panic!("notice period not elapsed");
             }
- #402--Contracts]-Bond--differential-test-harness-comparing-ours.rs/base.rs/theirs.rs-against-credence_bond-crate-FIX
-
         } else if e.ledger().timestamp() < bond.bond_start.saturating_add(bond.bond_duration) {
             panic_with_error!(e, ContractError::LockupNotExpired);
-main
         }
 
         let available = bond
@@ -864,6 +848,7 @@ pub fn create_bond(
 }
 
 #[cfg(test)]
+mod tests {
     use super::*;
 
     #[test]

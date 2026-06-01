@@ -376,7 +376,5 @@ mod tests {
 /// Wrapper that accepts an identity parameter for backward compatibility with fork variants.
 pub fn slash_bond_with_identity(e: &Env, admin: &Address, _identity: &Address, slash_amount: i128) -> IdentityBond {
     slash_bond(e, admin, slash_amount)
-
-main
 }
 
