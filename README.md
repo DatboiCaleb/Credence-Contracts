@@ -16,7 +16,6 @@ Part of [Credence](../README.md). Contracts run on the Stellar network via Sorob
 From the repo root:
 
 ```bash
-cd credence-contracts
 cargo build
 ```
 
