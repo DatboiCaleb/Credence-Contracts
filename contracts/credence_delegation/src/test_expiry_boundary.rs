@@ -34,9 +34,12 @@
 //!
 //! See `test_expiry_boundary_monotonic_*` tests for explicit validation.
 
+extern crate std;
+
 use super::*;
 use soroban_sdk::testutils::{Address as _, Ledger as _};
 use soroban_sdk::Env;
+use std::vec::Vec as StdVec;
 
 // ---------------------------------------------------------------------------
 // Test Helpers
@@ -176,7 +179,7 @@ fn test_expiry_boundary_lower_monotonic_advance_rejects_minus_1() {
 fn test_expiry_boundary_lower_monotonic_advance_accepts_plus_1() {
     let (e, client) = setup();
     let owner = Address::generate(&e);
-    let mut delegates = vec![];
+    let mut delegates = StdVec::new();
 
     // Create a series of delegations with advancing ledger and valid expiry offsets
     for i in 0..5 {
@@ -705,7 +708,7 @@ fn test_expiry_boundary_monotonic_ledger_advancing_window() {
     let owner = Address::generate(&e);
 
     // Create delegations in a monotonically advancing timestamp window
-    let mut delegations = vec![];
+    let mut delegations = StdVec::new();
 
     for step in 0..10 {
         let now = 1000 + step as u64;
@@ -747,7 +750,7 @@ fn test_expiry_boundary_monotonic_ledger_rejection_set_stable() {
     let now = e.ledger().timestamp();
 
     // Cases that must always reject at this timestamp
-    let reject_cases = vec![
+    let reject_cases = [
         (now.saturating_sub(100), "far past"),
         (now.saturating_sub(1), "1 sec past"),
         (now, "exactly now"),
@@ -769,7 +772,7 @@ fn test_expiry_boundary_monotonic_ledger_rejection_set_stable() {
     }
 
     // Cases that must always accept at this timestamp
-    let accept_cases = vec![
+    let accept_cases = [
         (now.saturating_add(1), "1 sec future"),
         (now.saturating_add(1000), "1000 sec future"),
         (now.saturating_add(MAX_DELEGATION_DURATION), "exact max"),

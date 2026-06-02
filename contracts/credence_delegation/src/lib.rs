@@ -16,7 +16,7 @@
 
 use credence_errors::ContractError;
 use soroban_sdk::panic_with_error;
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, Symbol};
+use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, Symbol, Vec};
 
 pub mod domain;
 pub mod nonce;
@@ -24,6 +24,7 @@ pub mod pausable;
 pub mod verifier;
 
 pub use domain::{DelegatedActionPayload, DomainTag};
+pub use pausable::PauseProposalView;
 pub use verifier::SchemeTag;
 
 // ---------------------------------------------------------------------------
@@ -569,6 +570,24 @@ impl CredenceDelegation {
         pausable::execute_pause_proposal(&e, proposal_id)
     }
 
+    /// Read-only, structured view of an in-flight (or executed) pause proposal,
+    /// for operator monitoring. Aggregates the four proposal storage entries
+    /// (counter, action payload, per-signer approvals, approval count) into a
+    /// single [`PauseProposalView`].
+    ///
+    /// Performs no `require_auth` and mutates nothing — safe to expose publicly.
+    ///
+    /// `signers` is the candidate set used to resolve `approved_by`; pass the
+    /// addresses you want checked (Soroban storage cannot enumerate keys). The
+    /// `action`, `approvals`, and `executed` fields are independent of it.
+    pub fn get_pause_proposal_state(
+        e: Env,
+        proposal_id: u64,
+        signers: Vec<Address>,
+    ) -> PauseProposalView {
+        pausable::get_pause_proposal_state(&e, proposal_id, &signers)
+    }
+
     // -----------------------------------------------------------------------
     // Private helpers
     // -----------------------------------------------------------------------
@@ -695,6 +714,9 @@ impl CredenceDelegation {
 // mod test_domain_separation;
 #[cfg(test)]
 mod test_delegation_ttl;
+
+#[cfg(test)]
+mod test_pause_proposal_view;
 
 #[cfg(test)]
 mod test_expiry_boundary;
