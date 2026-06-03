@@ -533,9 +533,7 @@ impl CredenceDelegation {
     /// Clients can use this to check scheme support before submitting
     /// delegated payloads.
     pub fn get_verifier(e: Env, scheme: u32) -> Option<Address> {
-        e.storage()
-            .instance()
-            .get(&DataKey::Verifier(scheme))
+        e.storage().instance().get(&DataKey::Verifier(scheme))
     }
 
     // -----------------------------------------------------------------------
@@ -586,6 +584,21 @@ impl CredenceDelegation {
         signers: Vec<Address>,
     ) -> PauseProposalView {
         pausable::get_pause_proposal_state(&e, proposal_id, &signers)
+    }
+
+    /// Compatibility shim: resolve a proposal that was recorded under a
+    /// counter-based ID (issued before the hash-derivation migration).
+    ///
+    /// Returns the raw action value (`1` = Pause, `2` = Unpause) if the
+    /// proposal is still in storage, or `ContractError::ProposalNotFound`
+    /// if no proposal exists under that ID. Does **not** panic.
+    ///
+    /// New code should use [`get_pause_proposal_state`] with a hash-derived ID
+    /// instead. This entry point exists solely for backward compatibility with
+    /// clients that persisted counter-based IDs before the migration.
+    pub fn get_proposal_by_legacy_id(e: Env, legacy_id: u64) -> u32 {
+        pausable::get_proposal_by_legacy_id(&e, legacy_id)
+            .unwrap_or_else(|err| panic_with_error!(&e, err))
     }
 
     // -----------------------------------------------------------------------
@@ -703,12 +716,14 @@ impl CredenceDelegation {
 
 // #[cfg(test)]
 // mod test_verifier;
-
-// #[cfg(test)]
-// mod test_pausable;
+#[cfg(test)]
+mod test_pausable;
 
 // #[cfg(test)]
 // mod test_pause_signer_invariant;
+
+#[cfg(test)]
+mod test_proposal_id_derivation;
 
 // #[cfg(test)]
 // mod test_domain_separation;

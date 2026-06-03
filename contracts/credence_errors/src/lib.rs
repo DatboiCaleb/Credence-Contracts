@@ -159,7 +159,7 @@ pub enum ContractError {
     SlashExceedsBond = 203,
     /// Storage cap for attestations or slash history reached.
     /// Replaces: panic!("storage cap reached")
-    StorageCapReached = 218,
+    StorageCapReached = 224,
 
     /// Bond lock-up period has not yet expired.
     /// Replaces: panic!("use withdraw for post lock-up")
@@ -380,7 +380,7 @@ pub enum ContractError {
     // --- Shared Bond/Delegation payload mismatch errors (218-221) ---
     // Wire-stable: codes documented in the note above; kept distinct from the
     // delegation scheme/verifier errors (504-507).
-    DomainMismatch = 218,
+    DomainMismatch = 225,
     OwnerMismatch = 219,
     TargetMismatch = 220,
     ContractIdMismatch = 221,
@@ -505,6 +505,7 @@ impl ErrorExt for ContractError {
             | ContractError::InvalidBondDuration
             | ContractError::InvalidNoticePeriod
             | ContractError::BondAlreadyExists
+            | ContractError::StorageCapReached
             | ContractError::InvariantViolation => ErrorCategory::Bond,
 
             ContractError::DuplicateAttestation
@@ -589,6 +590,7 @@ impl ErrorExt for ContractError {
             ContractError::InvalidBondDuration => "Bond duration must be strictly positive (> 0)",
             ContractError::InvalidNoticePeriod => "Rolling-bond notice_period_duration must be > 0 and <= duration",
             ContractError::BondAlreadyExists => "Bond already exists for this identity",
+            ContractError::StorageCapReached => "Storage cap for attestations or slash history reached",
             ContractError::InvariantViolation => {
                 "Bond storage drift detected; bonded/slashed or attestation counters inconsistent"
             }

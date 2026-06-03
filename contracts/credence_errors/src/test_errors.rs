@@ -35,6 +35,7 @@ mod tests {
             ContractError::InvalidBondDuration,
             ContractError::InvalidNoticePeriod,
             ContractError::BondAlreadyExists,
+            ContractError::StorageCapReached,
             ContractError::DomainMismatch,
             ContractError::OwnerMismatch,
             ContractError::TargetMismatch,
