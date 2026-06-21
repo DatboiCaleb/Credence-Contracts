@@ -40,7 +40,7 @@ fn last_bond_drift_event(e: &Env) -> Option<(BondDriftKind, i128, i128, u32, u32
         if tag != drift_sym {
             return None;
         }
-        <(BondDriftKind, i128, i128, u32, u32)>::try_from_val(e, data).ok()
+        <(BondDriftKind, i128, i128, u32, u32)>::try_from_val(e, &data).ok()
     })
 }
 

@@ -16,8 +16,8 @@ use std::collections::BTreeMap;
 
 use credence_bond::{CredenceBond, CredenceBondClient};
 use soroban_sdk::{
-    testutils::{Address as _, Ledger as _},
-    Address, Env, EnvTestConfig, String as SorobanString,
+    testutils::{Address as _, EnvTestConfig, Ledger as _},
+    Address, Env, String as SorobanString,
 };
 
 /// Metered resources for a single top-level entrypoint invocation. Field names

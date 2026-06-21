@@ -48,8 +48,11 @@ fn test_describe_config_after_initialize() {
     // Early-exit config not set yet.
     assert!(cfg.early_exit_treasury.is_none());
     assert!(cfg.early_exit_penalty_bps.is_none());
-    // Weight config defaults.
-    assert_eq!(cfg.weight_multiplier_bps, 0);
+    // Weight config defaults (see weighted_attestation::DEFAULT_WEIGHT_MULTIPLIER_BPS).
+    assert_eq!(
+        cfg.weight_multiplier_bps,
+        weighted_attestation::DEFAULT_WEIGHT_MULTIPLIER_BPS
+    );
 }
 
 #[test]
@@ -123,7 +126,8 @@ fn test_describe_bond_after_create_bond() {
     assert!(view.active);
     assert!(!view.is_rolling);
     assert_eq!(view.withdrawal_requested_at, 0);
-    assert_eq!(view.tier, BondTier::Silver); // 1000 >= TIER_BRONZE_MAX(1000) → Silver
+    // 1000 is far below TIER_BRONZE_MAX (1e21), so the tier is Bronze.
+    assert_eq!(view.tier, BondTier::Bronze);
 }
 
 #[test]
@@ -175,6 +179,9 @@ fn test_describe_bond_reflects_request_withdrawal() {
 
     // Rolling bond
     client.create_bond(&identity, &1000_i128, &3600_u64, &true, &600_u64);
+    // Advance the ledger clock so the recorded request timestamp is non-zero
+    // (Env::default() starts at timestamp 0).
+    e.ledger().with_mut(|l| l.timestamp = 1_000);
     client.request_withdrawal();
 
     let view = client.describe_bond(&identity).unwrap();

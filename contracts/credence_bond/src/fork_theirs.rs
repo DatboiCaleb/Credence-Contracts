@@ -3,7 +3,8 @@ use crate::{BondTier, DataKey, IdentityBond};
 
 use credence_errors::ContractError;
 use soroban_sdk::{
-    contract, contractimpl, contracttype, panic_with_error, Address, Env, String, Symbol, Val, Vec,
+    contract, contractimpl, contracttype, panic_with_error, Address, Env, IntoVal, String, Symbol,
+    Val, Vec,
 };
 
 #[contracttype]
@@ -245,8 +246,8 @@ impl CredenceBond {
             panic_with_error!(e, ContractError::SlashExceedsBond);
         }
 
-        let old_tier = tiered_bond::get_tier_for_amount(bond.bonded_amount + amount);
-        let new_tier = tiered_bond::get_tier_for_amount(bond.bonded_amount);
+        let old_tier = tiered_bond::get_tier_for_amount(&e, bond.bonded_amount + amount);
+        let new_tier = tiered_bond::get_tier_for_amount(&e, bond.bonded_amount);
         tiered_bond::emit_tier_change_if_needed(&e, &bond.identity, old_tier, new_tier);
 
         e.storage().instance().set(&key, &bond);
@@ -285,7 +286,7 @@ impl CredenceBond {
         );
         early_exit_penalty::emit_penalty_event(&e, &bond.identity, amount, penalty, &treasury);
 
-        let old_tier = tiered_bond::get_tier_for_amount(bond.bonded_amount);
+        let old_tier = tiered_bond::get_tier_for_amount(&e, bond.bonded_amount);
         bond.bonded_amount = bond
             .bonded_amount
             .checked_sub(amount)
@@ -293,7 +294,7 @@ impl CredenceBond {
         if bond.slashed_amount > bond.bonded_amount {
             panic_with_error!(e, ContractError::SlashExceedsBond);
         }
-        let new_tier = tiered_bond::get_tier_for_amount(bond.bonded_amount);
+        let new_tier = tiered_bond::get_tier_for_amount(&e, bond.bonded_amount);
         tiered_bond::emit_tier_change_if_needed(&e, &bond.identity, old_tier, new_tier);
 
         e.storage().instance().set(&key, &bond);
@@ -349,8 +350,8 @@ impl CredenceBond {
     }
 
     pub fn get_tier(e: Env) -> BondTier {
-        let bond = Self::get_identity_state(e);
-        tiered_bond::get_tier_for_amount(bond.bonded_amount)
+        let bond = Self::get_identity_state(e.clone());
+        tiered_bond::get_tier_for_amount(&e, bond.bonded_amount)
     }
 
     pub fn slash(e: Env, amount: i128) -> IdentityBond {
@@ -384,13 +385,13 @@ impl CredenceBond {
             .get::<_, IdentityBond>(&key)
             .unwrap_or_else(|| panic_with_error!(e, ContractError::BondNotFound));
 
-        let old_tier = tiered_bond::get_tier_for_amount(bond.bonded_amount);
+        let old_tier = tiered_bond::get_tier_for_amount(&e, bond.bonded_amount);
         bond.bonded_amount = bond
             .bonded_amount
             .checked_add(amount)
             .unwrap_or_else(|| panic_with_error!(e, ContractError::Overflow));
 
-        let new_tier = tiered_bond::get_tier_for_amount(bond.bonded_amount);
+        let new_tier = tiered_bond::get_tier_for_amount(&e, bond.bonded_amount);
         tiered_bond::emit_tier_change_if_needed(&e, &bond.identity, old_tier, new_tier);
 
         e.storage().instance().set(&key, &bond);
