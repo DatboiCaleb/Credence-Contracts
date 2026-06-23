@@ -50,6 +50,7 @@ use soroban_sdk::{Address, Env, Vec};
 /// ```text
 /// RUSTFLAGS="--cfg skip_slash_invariant" cargo test -p credence_bond
 /// ```
+#[allow(unexpected_cfgs)]
 const SKIP_SLASH_INVARIANT: bool = cfg!(skip_slash_invariant);
 
 /// Reads the current [`IdentityBond`] from contract storage, if one exists.

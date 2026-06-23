@@ -55,6 +55,10 @@ cargo clippy --workspace --all-targets --all-features -- -D warnings
 
 The dedicated CI workflow at `.github/workflows/contracts-lints.yml` runs the same checks.
 
+## WASM size budget
+
+Release Wasm for every deployable contract must stay within per-contract size ceilings enforced in CI. See [docs/wasm-size-budget.md](docs/wasm-size-budget.md) for the enforced limits and [`.github/workflows/wasm-size.yml`](.github/workflows/wasm-size.yml) for the gate.
+
 ## Project layout
 
 - `contracts/credence_bond/` — Identity bond contract

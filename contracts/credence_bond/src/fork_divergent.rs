@@ -1,5 +1,4 @@
 use crate::{BondTier, DataKey, IdentityBond};
-
 use credence_errors::ContractError;
 use soroban_sdk::{contract, contractimpl, contracttype, panic_with_error, Address, Env, String};
 
