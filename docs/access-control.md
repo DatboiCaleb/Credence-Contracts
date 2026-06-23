@@ -379,6 +379,40 @@ impl CredenceIdentity {
 }
 ```
 
+## Invalid-Address Policy
+
+Every privileged admin entrypoint that accepts a target `Address` MUST
+reject the zero/invalid address sentinel.  The sentinel is the strkey
+encoding of the all-zero Ed25519 public key:
+
+```
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+```
+
+Assigning a role to — or transferring ownership to — this address can
+permanently strand governance, so the guard is enforced before any
+authorisation or storage mutation.  The rejection uses
+`ContractError::InvalidAdminAddress` (code 110).
+
+### Entrypoints protected
+
+| Entrypoint           | Parameter guarded     |
+|----------------------|-----------------------|
+| `add_admin`          | `new_admin`           |
+| `update_admin_role`  | `admin_address`       |
+| `transfer_ownership` | `new_owner`           |
+| `reactivate_admin`   | `admin_address`       |
+| `deactivate_admin`   | `admin_address`       |
+| `remove_admin`       | `admin_to_remove`     |
+| `set_pause_signer`   | `signer`              |
+
+### Semantics
+
+An address is considered **invalid** when its string representation
+exactly equals the sentinel above.  This is a purely syntactic check:
+it catches uninitialised / garbage strkeys.  A valid (non-sentinel)
+contract or account address is never rejected by this guard.
+
 ## Future Enhancements
 
 Potential improvements for future versions:

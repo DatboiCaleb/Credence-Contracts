@@ -21,7 +21,7 @@ mod test_ownership_transfer;
 
 use credence_errors::ContractError;
 use soroban_sdk::panic_with_error;
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, Symbol, Vec};
+use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, String, Symbol, Vec};
 
 /// Admin role hierarchy levels
 #[contracttype]
@@ -81,6 +81,15 @@ enum DataKey {
     /// Pending owner for two-step ownership transfer
     PendingOwner,
 }
+
+/// The zero/invalid address sentinel.
+///
+/// In Soroban the all-zero Ed25519 public key encodes to this strkey.
+/// Assigning a governance role to (or transferring ownership to) this
+/// address can permanently strand administration, so every privileged
+/// entrypoint that accepts a target `Address` MUST reject it.
+const INVALID_ADDRESS_SENTINEL: &str =
+    "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF";
 
 #[contract]
 pub struct AdminContract;
@@ -194,7 +203,7 @@ impl AdminContract {
         pausable::require_not_paused(&e);
         caller.require_auth();
 
-        // Zero-address check
+        Self::require_valid_admin_address(&e, &new_admin);
 
         // Verify caller authorization
         Self::require_role_at_least(&e, &caller, Self::get_required_role_to_assign(role))
@@ -286,6 +295,8 @@ impl AdminContract {
     pub fn remove_admin(e: Env, caller: Address, admin_to_remove: Address) {
         pausable::require_not_paused(&e);
         caller.require_auth();
+
+        Self::require_valid_admin_address(&e, &admin_to_remove);
 
         // Get admin info
         let admin_info: AdminInfo = e
@@ -388,6 +399,8 @@ impl AdminContract {
         pausable::require_not_paused(&e);
         caller.require_auth();
 
+        Self::require_valid_admin_address(&e, &admin_address);
+
         // Get current admin info
         let mut admin_info: AdminInfo = e
             .storage()
@@ -476,6 +489,8 @@ impl AdminContract {
         pausable::require_not_paused(&e);
         caller.require_auth();
 
+        Self::require_valid_admin_address(&e, &admin_address);
+
         let mut admin_info: AdminInfo = e
             .storage()
             .instance()
@@ -522,6 +537,8 @@ impl AdminContract {
     pub fn reactivate_admin(e: Env, caller: Address, admin_address: Address) {
         pausable::require_not_paused(&e);
         caller.require_auth();
+
+        Self::require_valid_admin_address(&e, &admin_address);
 
         let mut admin_info: AdminInfo = e
             .storage()
@@ -575,7 +592,7 @@ impl AdminContract {
         pausable::require_not_paused(&e);
         caller.require_auth();
 
-        // Zero-address check
+        Self::require_valid_admin_address(&e, &new_owner);
 
         // Get current owner
         let current_owner: Address = e
@@ -857,6 +874,29 @@ impl AdminContract {
         }
     }
 
+    /// Require that the target address is not the zero/invalid sentinel
+    /// and is not the contract's own address.
+    ///
+    /// # Policy
+    /// An address is considered invalid when:
+    ///
+    /// 1. Its strkey encoding matches the all-zero Ed25519 public key
+    ///    (`GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABZKY`).
+    ///    This catches uninitialised/garbage strkeys.
+    /// 2. It equals the contract's own address.  Assigning a governance
+    ///    role to the contract itself can cause invariants to break.
+    ///
+    /// # Panics
+    /// * `ContractError::InvalidAdminAddress` if the address fails either check.
+    fn require_valid_admin_address(e: &Env, address: &Address) {
+        if address.to_string() == String::from_str(e, INVALID_ADDRESS_SENTINEL) {
+            panic_with_error!(e, ContractError::InvalidAdminAddress);
+        }
+        if address == &e.current_contract_address() {
+            panic_with_error!(e, ContractError::InvalidAdminAddress);
+        }
+    }
+
     /// Require that the caller has at least the specified role.
     fn require_role_at_least(
         e: &Env,
@@ -914,7 +954,7 @@ mod test_pausable;
 mod test_basic;
 
 #[cfg(test)]
-mod test_zero_address_working;
+mod test_zero_address;
 
 #[cfg(test)]
 mod test_immutable_config_simple;
