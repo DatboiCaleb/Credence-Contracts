@@ -16,6 +16,10 @@ mod tiered_bond;
 mod upgrade_auth;
 mod weighted_attestation;
 
+#[cfg(test)]
+#[path = "fuzz/test_weighted_attestation_rounding.rs"]
+mod test_weighted_attestation_rounding;
+
 #[path = "types/mod.rs"]
 pub mod types;
 
