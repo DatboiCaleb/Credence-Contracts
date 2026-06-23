@@ -28,11 +28,7 @@ fn setup(e: &Env) -> (CredenceBondClient<'_>, Address, Address, Address) {
     (client, admin, attester, contract_id)
 }
 
-fn computed_weight(
-    stake: i128,
-    multiplier_bps: u32,
-    max_weight: u32,
-) -> (u32, u32, u32) {
+fn computed_weight(stake: i128, multiplier_bps: u32, max_weight: u32) -> (u32, u32, u32) {
     let e = Env::default();
     let (client, admin, attester, contract_id) = setup(&e);
 
@@ -143,13 +139,13 @@ fn regression_max_range_inputs_do_not_overflow() {
             MAX_ATTESTATION_WEIGHT,
             MAX_ATTESTATION_WEIGHT,
         ),
+        (i128::MAX, u32::MAX, u32::MAX, MAX_ATTESTATION_WEIGHT),
         (
             i128::MAX,
-            u32::MAX,
-            u32::MAX,
+            0,
             MAX_ATTESTATION_WEIGHT,
+            DEFAULT_ATTESTATION_WEIGHT,
         ),
-        (i128::MAX, 0, MAX_ATTESTATION_WEIGHT, DEFAULT_ATTESTATION_WEIGHT),
         (0, u32::MAX, u32::MAX, DEFAULT_ATTESTATION_WEIGHT),
     ];
 
