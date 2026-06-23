@@ -112,7 +112,7 @@ fn test_revoke_delegation() {
         &86400_u64,
         &0_u64,
     );
-    client.revoke_delegation(&owner, &delegate, &DelegationType::Attestation, &1_u64, &1_u64);
+    client.revoke_delegation(&owner, &delegate, &DelegationType::Attestation, &1_u64);
 
     let d = client.get_delegation(&owner, &delegate, &DelegationType::Attestation);
     assert!(d.revoked);
@@ -541,6 +541,7 @@ fn test_get_delegation_summary() {
     
     let summary = client.get_delegation_summary(&owner, &delegate, &DelegationType::Attestation);
     assert!(summary.is_valid);
+    assert_eq!(summary.status, DelegationStatus::Active);
     assert_eq!(summary.time_to_expiry, 1000);
     assert!(matches!(summary.delegation_type, DelegationType::Attestation));
     assert_eq!(summary.revoked_at, 0);
@@ -558,7 +559,8 @@ fn test_get_delegation_summary() {
     client.revoke_delegation(&owner, &delegate, &DelegationType::Attestation, &1_u64);
     let summary3 = client.get_delegation_summary(&owner, &delegate, &DelegationType::Attestation);
     assert!(!summary3.is_valid);
-    assert_eq!(summary3.time_to_expiry, 600);
+    assert_eq!(summary3.status, DelegationStatus::Revoked);
+    assert!(summary3.revoked_at > 0);
 
     // 4. Expire
     e.ledger().with_mut(|li| {
@@ -566,5 +568,6 @@ fn test_get_delegation_summary() {
     });
     let summary4 = client.get_delegation_summary(&owner, &delegate, &DelegationType::Attestation);
     assert!(!summary4.is_valid);
+    assert_eq!(summary4.status, DelegationStatus::Revoked);
     assert_eq!(summary4.time_to_expiry, 0);
 }
