@@ -34,6 +34,7 @@ required-features = ["gas-bench"]
 [[bin]]
 name = "update-cost-baseline"
 path = "benches/update_cost_baseline.rs"
+test = false
 
 [dependencies]
 credence_errors = { path = "../credence_errors" }
