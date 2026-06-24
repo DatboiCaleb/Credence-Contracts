@@ -41,6 +41,10 @@ mod test_describe;
 #[cfg(test)]
 mod test_liquidate;
 
+/// Tests for the bounded claim expiry sweep (permissionless keeper).
+#[cfg(test)]
+mod test_claim_expiry_sweep;
+
 use credence_errors::ContractError;
 use soroban_sdk::{
     contract, contractimpl, contracttype, panic_with_error, Address, Env, IntoVal, String, Symbol,
@@ -808,6 +812,48 @@ impl CredenceBond {
         weighted_attestation::set_weight_config(&e, multiplier_bps, max_weight);
     }
 
+    /// Transfer the admin role to a new address.
+    ///
+    /// This entrypoint requires both the current admin and the proposed new admin
+    /// to authorize the call. The dual-auth requirement ensures the new admin
+    /// explicitly accepts the role before it becomes active.
+    ///
+    /// Errors:
+    /// - `ContractError::NotInitialized` when the admin has not been set.
+    /// - `ContractError::NotAdmin` when `current_admin` does not match the stored admin.
+    /// - `ContractError::InvalidAdminAddress` when `new_admin` is a zero/unset address.
+    /// - `ContractError::AdminUnchanged` when `new_admin` equals `current_admin`.
+    pub fn transfer_admin(e: Env, current_admin: Address, new_admin: Address) {
+        current_admin.require_auth();
+        new_admin.require_auth();
+
+        let stored_admin: Address = e
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .unwrap_or_else(|| panic_with_error!(e, ContractError::NotInitialized));
+        if stored_admin != current_admin {
+            panic_with_error!(e, ContractError::NotAdmin);
+        }
+        if stored_admin == new_admin {
+            panic_with_error!(e, ContractError::AdminUnchanged);
+        }
+
+        let zero_str = soroban_sdk::String::from_str(
+            &e,
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        );
+        if new_admin.to_string() == zero_str {
+            panic_with_error!(e, ContractError::InvalidAdminAddress);
+        }
+
+        e.storage().instance().set(&DataKey::Admin, &new_admin);
+        e.events().publish(
+            (Symbol::new(&e, "admin_transferred"),),
+            (current_admin, new_admin),
+        );
+    }
+
     /// Get weight config (multiplier_bps, max_weight).
     pub fn get_weight_config(e: Env) -> (u32, u32) {
         weighted_attestation::get_weight_config(&e)
@@ -1472,6 +1518,45 @@ impl CredenceBond {
     /// See also: [`docs/reentrancy.md`](../../../docs/reentrancy.md)
     pub fn is_locked(e: Env) -> bool {
         Self::check_lock(&e)
+    }
+
+    /// Permissionless, bounded sweep to expire stale pending claims.
+    ///
+    /// Scans up to `max_iter` pending claims for the user, removes those past
+    /// their `expires_at` timestamp, and returns the count pruned. Claims with
+    /// no expiry (`expires_at == 0`) are never removed. This is a keeper-callable
+    /// operation to prune storage without requiring privileged access.
+    ///
+    /// # Arguments
+    /// * `user` - Address whose claims to scan
+    /// * `max_iter` - Maximum number of claims to scan (hard-capped at 50 for gas safety)
+    ///
+    /// # Returns
+    /// Number of expired claims removed
+    ///
+    /// # Events
+    /// Emits `claims_expired(user, pruned_count)` event for off-chain indexing.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use credence_bond::{CredenceBond, CredenceBondClient};
+    /// use soroban_sdk::{Env, Address};
+    /// use soroban_sdk::testutils::Address as _;
+    ///
+    /// let e = Env::default();
+    /// let contract_id = e.register(CredenceBond, ());
+    /// let client = CredenceBondClient::new(&e, &contract_id);
+    /// let user = Address::generate(&e);
+    ///
+    /// // Sweep up to 50 claims for the user
+    /// let pruned = client.expire_claims(&user, &50_u32);
+    /// println!("Removed {} expired claims", pruned);
+    /// ```
+    ///
+    /// See also: [`docs/batch-operations.md`](../../../docs/batch-operations.md)
+    pub fn expire_claims(e: Env, user: Address, max_iter: u32) -> u32 {
+        claims::expire_claims_bounded(&e, &user, max_iter)
     }
 
     // -----------------------------------------------------------------
