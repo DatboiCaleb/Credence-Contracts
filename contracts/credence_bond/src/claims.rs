@@ -240,6 +240,7 @@ fn get_next_claim_id(e: &Env) -> u64 {
 /// heavily-rewarded user the read can exceed the ledger read budget. Prefer
 /// [`get_pending_claims_page`] for large claim sets; this function is suitable
 /// only when the set is known to be small.
+/// Note: Ensure the returned Vec is ordered by claim_id, then ledger timestamp.
 pub fn get_pending_claims(e: &Env, user: &Address) -> Vec<PendingClaim> {
     e.storage()
         .persistent()
